@@ -9,6 +9,7 @@
 
 #include <cstdio>
 #include <memory>
+#include <string>
 #include <vector>
 
 #include "app.h"
@@ -255,10 +256,49 @@ int selfTest(const wchar_t* outPath) {
     return failures ? 1 : 0;
 }
 
+// batteryReport reads every device once and writes each one with a battery
+// to the given file as JSON, for kitchensink's client:
+// {"devices":[{"name":"Basilisk V3 Pro","battery":87,"charging":true}]}.
+// It opens no window.
+int batteryReport(const wchar_t* outPath) {
+    std::vector<sq::Device> ds;
+    bool read = false;
+    {
+        sq::Devices devices([] {});
+        for (int i = 0; i < 300 && !read; i++) {
+            Sleep(100);
+            read = devices.Changed(ds);
+        }
+    }
+    if (!read) return 1;
+    std::string json = "{\"devices\":[";
+    bool first = true;
+    for (const auto& d : ds) {
+        if (d.battery < 0 || d.asleep) continue;
+        std::string name;
+        for (char c : d.name)
+            if (c != '"' && c != '\\' && (unsigned char)c >= 0x20) name += c;
+        if (!first) json += ",";
+        first = false;
+        json += "{\"name\":\"" + name + "\",\"battery\":" + std::to_string(d.battery) +
+                ",\"charging\":" + (d.charging ? "true" : "false") + "}";
+    }
+    json += "]}\n";
+    std::wstring path = outPath;
+    while (!path.empty() && (path.back() == L'"' || path.back() == L' ')) path.pop_back();
+    if (!path.empty() && path.front() == L'"') path.erase(0, 1);
+    FILE* out = _wfopen(path.c_str(), L"wb");
+    if (!out) return 1;
+    fwrite(json.data(), 1, json.size(), out);
+    fclose(out);
+    return 0;
+}
+
 }  // namespace
 
 int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR cmdLine, int) {
     if (const wchar_t* t = wcsstr(cmdLine, L"-selftest ")) return selfTest(t + 10);
+    if (const wchar_t* t = wcsstr(cmdLine, L"-battery ")) return batteryReport(t + 9);
     // One at a time: a second start brings the first forward.
     HANDLE mutex = CreateMutexW(nullptr, TRUE, L"Local\\squeak");
     if (GetLastError() == ERROR_ALREADY_EXISTS) {

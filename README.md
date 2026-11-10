@@ -30,6 +30,12 @@ the protocol tests. The tests also build anywhere:
 red through the app's own worker, reads it back, puts it back, and writes
 the results to the file.
 
+`squeak.exe -battery <file>` reads every device once, opens no window,
+and writes those with a battery to the file as JSON
+(`{"devices":[{"name":"…","battery":87,"charging":true}]}`). kitchensink's
+Windows client runs it every two minutes to say when a mouse has finished
+charging.
+
 ## Adding a device
 
 Unknown Razer devices are tried with the usual transaction IDs, so most
