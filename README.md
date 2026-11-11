@@ -6,6 +6,8 @@ Synapse (they're kept on the mouse), then close it: Squeak shows each
 device's battery, DPI stages, polling rate and firmware, and sets its
 lighting.
 
+![Squeak showing a Basilisk V3 Pro and a DeathAdder V3 Pro](docs/screenshot.png)
+
 It talks to the devices directly with Windows' HID API, using the control
 protocol OpenRazer documents (90-byte feature reports). No Razer driver or
 service is needed.
